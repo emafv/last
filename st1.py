@@ -13,25 +13,31 @@ import folium
 from streamlit_folium import st_folium
 import streamlit.components.v1 as components
 import networkx as nx
+from geopy.geocoders import Nominatim
+geolocator = Nominatim(user_agent="streamlit_application_last_task")
 
 with st.echo(code_location='below'):
     st.set_page_config(layout="wide")
     st.title("Финальное задание")
     st.write("Идея: используя мобильное приложение \"Красного и белого\", берем оттуда useragent, после чего получаем данные обо всех магазинах в Москве и их ценах")
-
+    
     def get_coordinates_by_adress(address):
         """
         получить адрес по тексту используя данные из OpenStreetMap
         NOTE: загружайте данные в виде "улица X, 1", с запятой и текстом "улица"
         """
         address = f'Москва, {address}'
-        url = 'https://nominatim.openstreetmap.org/search/' + urllib.parse.quote(address) +'?format=json'
-
-        response = requests.get(url).json()
-        if response:
-            lat = response[0]['lat']
-            lon = response[0]['lon']
-            description = response[0]['display_name']
+        #         url = 'https://nominatim.openstreetmap.org/search/' + urllib.parse.quote(address) +'?format=json'
+        #         response = requests.get(url).json()
+        try:
+            location = geolocator.geocode(address)
+        except:
+            return None
+            
+        if location:
+            lat = location.latitude
+            lon = location.longitude
+            description = location.address
             return Point(lat=float(lat), lon=float(lon), description=description)
 
 
