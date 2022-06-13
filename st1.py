@@ -1,3 +1,4 @@
+
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -20,7 +21,7 @@ with st.echo(code_location='below'):
     st.set_page_config(layout="wide")
     st.title("Финальное задание")
     st.write("Идея: используя мобильное приложение \"Красного и белого\", берем оттуда useragent, после чего получаем данные обо всех магазинах в Москве и их ценах")
-    
+
     def get_coordinates_by_adress(address):
         """
         получить адрес по тексту используя данные из OpenStreetMap
@@ -31,17 +32,17 @@ with st.echo(code_location='below'):
         #         response = requests.get(url).json()
         try:
             location = geolocator.geocode(address)
-        except:
+        except Exception as e:
+            print(e)
             return None
-            
+
         if location:
             lat = location.latitude
             lon = location.longitude
             description = location.address
-            return Point(lat=float(lat), lon=float(lon), description=description)
+            return Point(lat=float(lat), lon=float(lon), description=description)   
 
-
-
+    @st.cache(allow_output_mutation=True)
     def get_req_by_cat(cat_id, city_id=5561, shop_id=5983):
         """получить все магазины определенной категории"""
         headers = {
@@ -58,32 +59,16 @@ with st.echo(code_location='below'):
         return Good.from_kb(request_result)
 
     categories = { # список категорий товаров, также из приложения
-        10101: "Идеи для подарков",
         100002: "Вино импорт",
         101013: "Вино Россия",
-        10102: "Вино с оценкой",
         100085: "Вино игристое, Вермут",
         100087: "Водка, Настойки",
         100011: "Виски, Бурбон",
         100091: "Коньяк, Арманьяк",
         100114: "Текила, Ром, Ликер",
         100095: "Соки, Воды",
-        100081: "Чай и кофе",
-        100006: "Бакалея",
-        101025: "Мясо, рыба",
-        101014: "Консервация и салаты",
         101024: "Фрукты и овощи",
-        100111: "Молочные продукты",
-        101007: "Мороженое",
-        100101: "Шоколад, Конфеты",
-        100103: "Печенье и вафли",
-        101008: "Снэки",
-        100036: "Пиво импорт",
-        100037: "Пиво Россия",
-        101020: "Коктейли",
-        101027: "Logic, IQOS, Juul, Ploom, GLO",
-        101002: "Корм для животных",
-        101029: "Промтовары"
+        100101: "Шоколад, Конфеты"
     }
 
     class Good(): # объект типа товар
@@ -238,6 +223,7 @@ with st.echo(code_location='below'):
     # инициализация может занимать много времени, подождите пожалуйста
     for shop in closest_shops:
         print(shop.all_goods)
+        st.info(f"Данные по магазину по адресу '{shop.address}' успешно загружены")
 
     ### получаем датасет из всех продуктов в магазинах
     def shop_df(shop):
@@ -435,6 +421,7 @@ with st.echo(code_location='below'):
         При построении маршрута мы будем использовать следующую эвристику:
         - если расстояние от точки А до точки Б по прямой больше, чем от точки А до точки С, то и на карте города А к Б так же ближе
     """)
+
     
 
     vertices = [start, *closest_shops, dest]
@@ -463,6 +450,7 @@ with st.echo(code_location='below'):
         return d
     shortest_path = min(max_len_paths, key=lambda path: path_distance(G, path))
     
+    st.write("Ниже изображен построенный маршрут, найденный с помощью библиотеки networkX, на полном графе расстояний между магазинами")
 
     m = folium.Map(center, zoom_start=12)
 
@@ -482,14 +470,14 @@ with st.echo(code_location='below'):
 
     folium.Circle(start.point,radius=50, tooltip=start.description, color="red").add_to(m)
     folium.Circle(dest.point,radius=50, tooltip=dest.description, color="red").add_to(m)
-
-    for index, shop in enumerate(closest_shops, 1):
-        description = f"""({index})
-        
-    Адрес: {shop.address}
-
-    Расстояние, КМ: {start.distance(shop.point) + dest.distance(shop.point)}
-    """
+    st.write("Маршрут:")
+    st.write(f"Начало - {start.description}")
+    for i, element in enumerate(shortest_path[1:-1], 1):
+        st.write(f"{i} магазин: {vertices[element].address}")
+    st.write(f"Конец - {dest.description}")
+    for index, element in enumerate(shortest_path[1:-1], 1):
+        shop = vertices[element]
+        description = f"""({index}): {shop.address}"""
         folium.Circle(shop.point.point,radius=30, tooltip=description, color="blue").add_to(m)
     st_m =  st_folium(m, width = 700, height=500)
 
