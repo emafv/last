@@ -16,6 +16,7 @@ import streamlit.components.v1 as components
 import networkx as nx
 from geopy.geocoders import Nominatim
 geolocator = Nominatim(user_agent="streamlit_application_last_task")
+import logging
 
 with st.echo(code_location='below'):
     st.set_page_config(layout="wide")
@@ -33,7 +34,7 @@ with st.echo(code_location='below'):
         try:
             location = geolocator.geocode(address)
         except Exception as e:
-            print(e)
+            logging.exception(e)
             return None
 
         if location:
